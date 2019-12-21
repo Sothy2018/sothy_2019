@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import metrics
 
-d_train = pd.read_csv("train-0.1m.csv")
+d_train = pd.read_csv("train-1m.csv")
 d_test = pd.read_csv("test.csv")
 d_train_test = d_train.append(d_test)
 
@@ -23,10 +23,8 @@ X_test = X_train_test[d_train.shape[0]:]
 y_test = y_train_test[d_train.shape[0]:]
 
 
-md = RandomForestClassifier(n_estimators = 500, n_jobs = -1)
+md = RandomForestClassifier(n_estimators = 100, n_jobs = -1)
 %time md.fit(X_train, y_train)
-
 
 %time phat = md.predict_proba(X_test)[:,1]
 metrics.roc_auc_score(y_test, phat)
-

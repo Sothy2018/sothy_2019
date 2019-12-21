@@ -6,31 +6,26 @@ library(Matrix)
 
 set.seed(123)
 
-d_train <- read_csv("train-10m.csv")
+d_train <- read_csv("train-1m.csv")
 d_test <- read_csv("test.csv")
 
 
 system.time({
   X_train_test <- sparse.model.matrix(dep_delayed_15min ~ .-1, data = rbind(d_train, d_test))
-  n1 <- nrow(d_train)
-  n2 <- nrow(d_test)
-  X_train <- X_train_test[1:n1,]
-  X_test <- X_train_test[(n1+1):(n1+n2),]
+  X_train <- X_train_test[1:nrow(d_train),]
+  X_test <- X_train_test[(nrow(d_train)+1):(nrow(d_train)+nrow(d_test)),]
 })
 dim(X_train)
 
-dxgb_train <- xgb.DMatrix(data = X_train, label = ifelse(d_train$dep_delayed_15min=='Y',1,0))
 
-
-
+# random forest with xgboost
 system.time({
-n_proc <- detectCores()
-md <- xgb.train(data = dxgb_train, nthread = n_proc, 
-                 objective = "binary:logistic", nround = 1000, 
-                 max_depth = 16, eta = 0.01, subsample = 0.5,
-                 min_child_weight = 1)
+  n_proc <- detectCores()
+  md <- xgboost(data = X_train, label = ifelse(d_train$dep_delayed_15min=='Y',1,0),
+                 nthread = n_proc, nround = 1, max_depth = 20,
+                 num_parallel_tree = 100, subsample = 0.632,
+                 colsample_bytree = 1/sqrt(length(X_train@x)/nrow(X_train)))
 })
-
 
 
 system.time({
@@ -38,5 +33,4 @@ system.time({
 })
 rocr_pred <- prediction(phat, d_test$dep_delayed_15min)
 performance(rocr_pred, "auc")
-
 
